@@ -1,0 +1,163 @@
+unit Unit1;
+
+{$mode objfpc}{$H+}
+
+interface
+
+uses
+  Classes, SysUtils, Forms, Controls, Graphics, Dialogs, Grids, StdCtrls, Types;
+
+type
+
+  { TForm1 }
+
+  TForm1 = class(TForm)
+    Edit1: TEdit;
+    Edit2: TEdit;
+    sgRozvrh: TStringGrid;
+    procedure FormCreate(Sender: TObject);
+    procedure sgRozvrhDragDrop(Sender, Source: TObject; X, Y: Integer);
+    procedure sgRozvrhDragOver(Sender, Source: TObject; X, Y: Integer;
+      State: TDragState; var Accept: Boolean);
+    procedure sgRozvrhDrawCell(Sender: TObject; aCol, aRow: Integer;
+      aRect: TRect; aState: TGridDrawState);
+    procedure sgRozvrhMouseDown(Sender: TObject; Button: TMouseButton;
+      Shift: TShiftState; X, Y: Integer);
+    procedure sgRozvrhPrepareCanvas(sender: TObject; aCol, aRow: Integer;
+      aState: TGridDrawState);
+  private
+
+  public
+
+  end;
+
+type
+    TZmena = record
+        Majster, Blok, PG, RS : string;
+    end;
+var
+  Form1: TForm1;
+  zmena1Marcinek, zmena2Basa : TZmena;
+  rozvrh : array[1..24, 1..42] of string;   //9 pozicii, 7 dni - stlpcov
+  pocet_dni, i : byte;
+  SourceCol, SourceRow : integer;
+
+implementation
+
+{$R *.lfm}
+
+{ TForm1 }
+
+procedure TForm1.FormCreate(Sender: TObject);
+begin
+  pocet_dni := 42;
+	zmena1Marcinek.Majster := 'Marcinek';
+	zmena1Marcinek.Blok := 'Hitka';
+	zmena1Marcinek.PG := 'Fabian';
+	zmena1Marcinek.RS := 'Morecz';
+
+	zmena2Basa.Majster := 'Basa';
+	zmena2Basa.Blok := 'Horvath';
+	zmena2Basa.PG := 'Krajci';
+	zmena2Basa.RS := 'Svitek';
+//naplnit fixne
+   sgRozvrh.Cells[0,2]:='Blok';
+   sgRozvrh.Cells[0,5]:='PG';
+   sgRozvrh.Cells[0,7]:='RS';
+   sgRozvrh.Cells[0,9]:='Blok';
+   sgRozvrh.Cells[0,11]:='PG';
+   sgRozvrh.Cells[0,13]:='RS';
+   sgRozvrh.Cells[0,15]:='Blok';
+   sgRozvrh.Cells[0,17]:='PG';
+   sgRozvrh.Cells[0,19]:='RS';
+   sgRozvrh.Cells[0,21]:='Z1';
+   sgRozvrh.Cells[0,23]:='Z2';
+
+for i:=1 to pocet_dni do
+    begin
+        rozvrh[1,i] := DateToStr(Date+(i-1));
+        rozvrh[2,i] := LongDayNames[DayOfWeek(Date+(i-1))];
+    end;
+
+for i:=1 to pocet_dni do
+    begin
+        sgRozvrh.Cells[i,0]:=rozvrh[1,i];
+        sgRozvrh.Cells[i,1]:=rozvrh[2,i];
+        sgRozvrh.Cells[1,5]:='test1';
+    end;
+end;
+//---------farby riadkov------------------------
+{procedure TForm1.sgRozvrhDrawCell(Sender: TObject; aCol, aRow: Integer;
+  aRect: TRect; aState: TGridDrawState);
+begin
+  for aRow:= 2 to 4 do
+      for aCol := 1 to sgRozvrh.ColCount do
+       begin
+          sgRozvrh.Canvas.Brush.Color:= clBlue;
+          sgRozvrh.Canvas.Font.Color:= clBlack;
+          sgRozvrh.Canvas.FillRect(sgRozvrh.CellRect(aCol,aRow));
+       end;
+       sgRozvrh.Cells[1,4]:='test';
+       sgRozvrh.Cells[1,5]:='test1';
+end;}
+
+procedure TForm1.sgRozvrhPrepareCanvas(sender: TObject; aCol, aRow: Integer;
+  aState: TGridDrawState);
+begin
+   if not (gdfixed in aState) then begin
+    if (aRow=2) or (aRow=3) or (aRow=4) or (aRow=9) or (aRow=10) or (aRow=15) or (aRow=16) then  begin
+      sgRozvrh.Canvas.Brush.Color := clBlue;
+    end;
+    if (aRow=5) or (aRow=6) or (aRow=11) or (aRow=12) or (aRow=17) or (aRow=18) then begin
+        sgRozvrh.Canvas.Brush.Color := clGreen;
+   end;
+    if (aRow=7) or (aRow=8) or (aRow=13) or (aRow=14) or (aRow=19) or (aRow=20) then begin
+        sgRozvrh.Canvas.Brush.Color := clYellow;
+    end;
+    if (aRow=21) or (aRow=22) or (aRow=23) or (aRow=24) then begin
+        sgRozvrh.Canvas.Brush.Color := clRed;
+    end;
+   end;
+end;
+
+//--------Drag and Drop--------------------------
+procedure TForm1.sgRozvrhDragDrop(Sender, Source: TObject; X, Y: Integer);
+var
+  DestCol, DestRow : integer;
+begin
+	sgRozvrh.MouseToCell(X,Y,DestCol,DestRow);
+
+  sgRozvrh.Cells[DestCol,DestRow] := sgRozvrh.Cells[SourceCol,SourceRow];
+  if (SourceCol <> DestCol) or (SourceRow <> DestRow) then
+    sgRozvrh.Cells[SourceCol,SourceRow] := '';
+end;
+
+procedure TForm1.sgRozvrhDragOver(Sender, Source: TObject; X, Y: Integer;
+  State: TDragState; var Accept: Boolean);
+var
+  CurrentCol, CurrentRow: integer;
+begin
+  sgRozvrh.MouseToCell(X,Y,CurrentCol, CurrentRow);
+
+  Accept := (Sender = Source) and (CurrentCol > 0) and (CurrentRow > 1);
+end;
+
+procedure TForm1.sgRozvrhDrawCell(Sender: TObject; aCol, aRow: Integer;
+  aRect: TRect; aState: TGridDrawState);
+begin
+
+end;
+
+procedure TForm1.sgRozvrhMouseDown(Sender: TObject; Button: TMouseButton;
+  Shift: TShiftState; X, Y: Integer);
+begin
+  sgRozvrh.MouseToCell(X,Y,SourceCol,SourceRow);
+
+  if (SourceCol > 0) and (SourceRow > 1) then
+  	sgRozvrh.BeginDrag(False, 4);
+end;
+
+
+
+end.
+
