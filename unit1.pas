@@ -5,7 +5,8 @@ unit Unit1;
 interface
 
 uses
-  Classes, SysUtils, Forms, Controls, Graphics, Dialogs, Grids, StdCtrls, Clipbrd;
+  Classes, SysUtils, Forms, Controls, Graphics, Dialogs, Grids, StdCtrls,
+  Clipbrd, ExtDlgs, EditBtn, DateUtils;
 
 type
 
@@ -13,10 +14,13 @@ type
 
   TForm1 = class(TForm)
     Button1: TButton;
+    DateEdit1: TDateEdit;
     Edit1: TEdit;
+    Edit2: TEdit;
+    Memo1: TMemo;
     sgRozvrh: TStringGrid;
+    procedure DateEdit1Change(Sender: TObject);
     procedure FormCreate(Sender: TObject);
-    procedure Button1Click(Sender: TObject);
     procedure sgRozvrhDragDrop(Sender, Source: TObject; X, Y: Integer);
     procedure sgRozvrhDragOver(Sender, Source: TObject; X, Y: Integer;
       State: TDragState; var Accept: Boolean);
@@ -40,11 +44,16 @@ type
         posun_zmeny : smallint;
     end;
 
+//type
+    //TCisZmeny = array[1..6] of TZmena;
+
 var
   Form1: TForm1;
-  zmena1Marcinek, zmena2Basa : TZmena;
+  //zmena1Marcinek, zmena2Basa : TZmena;
   velkost_pola, posun_zmeny, akt_zmena, max_zmien, i: smallint;
   SourceCol, SourceRow : integer;
+
+  cisloZmeny : array[1..6] of TZmena;
 
   poleZmeny : array[1..42] of string=('O','O','O','N','N','N','N',
                                        'V','V','V','R','R','R','R',
@@ -69,9 +78,9 @@ implementation
 
 procedure TForm1.FormCreate(Sender: TObject);
 begin
-  posun_zmeny:= 0;
+  posun_zmeny:= 0; //0,7,14,21,28,35
 
-  with zmena1Marcinek do
+  with cisloZmeny[1] do
     begin
       Majster := 'Marcinek';
 	    Blok := 'Hitka';
@@ -79,9 +88,9 @@ begin
 	    RS := 'Morecz';
       zmena_cislo := 1;
       odrobit_Z := 7;
-      posun_zmeny:= 1;
+      posun_zmeny:= 0;
     end;
-  with zmena2Basa do
+  with cisloZmeny[2] do
     begin
       Majster := 'Basa';
 	    Blok := 'Horvath';
@@ -104,29 +113,27 @@ begin
    sgRozvrh.Cells[0,19]:='RS';
    sgRozvrh.Cells[0,21]:='Z1';
    sgRozvrh.Cells[0,25]:='Z2';
-
-for i:=1 to High(poleZmeny) do
-    begin
-        sgRozvrh.Cells[i,0]:= DateToStr(Date+(i-1));                //poleZmeny[1,i];
-        sgRozvrh.Cells[i,1]:= LongDayNames[DayOfWeek(Date+(i-1))];  //poleZmeny[2,i];
-        sgRozvrh.Cells[1,5]:='test1';
-    end;
 end;
 
 procedure TForm1.RotateLeft(var poleZmeny : array of string; velkost_pola, posun_zmeny: smallint);
 var  i,j : smallint;
   temp, akt : string;
 begin
+  Memo1.Clear;
   for j:=1 to posun_zmeny do
        begin
         temp:= poleZmeny[0];
-        for i:=0 to (velkost_pola-2) do
+        for i:=(Low(poleZmeny)) to (High(poleZmeny)) do
             begin
               poleZmeny[i]:= poleZmeny[i+1];
-              akt:= poleZmeny[i+1];
+              akt:= poleZmeny[i];
             end;
-        poleZmeny[i+1]:= temp;
+        poleZmeny[High(poleZmeny)]:= temp;
        end;
+  for i:=(Low(poleZmeny)) to (High(poleZmeny)) do
+      begin
+       Memo1.Append(poleZmeny[i]);
+      end;
 end;
 
 //---------farby riadkov------------------------
@@ -143,40 +150,41 @@ begin
      end;
 end;
 
-procedure TForm1.Button1Click(Sender: TObject);
-var i: smallint;
+procedure TForm1.DateEdit1Change(Sender: TObject);
 begin
-  //for i:=1 to ORD(HIGH(TCisloZmeny)) do begin
-  	//TZmena.zmena_cislo := 2;
-    RotateLeft(poleZmeny, velkost_pola, posun_zmeny);
-    Zobraz(poleZmeny, velkost_pola);
-  //end;
+  for i:=1 to (High(poleZmeny)) do
+    begin
+        sgRozvrh.Cells[i,0]:= DateToStr(DateOf(DateEdit1.Date+(i-1)));//DateToStr(Date+(i-1));                //poleZmeny[1,i];
+        sgRozvrh.Cells[i,1]:= LongDayNames[DayOfWeek(DateEdit1.Date+(i-1))];  //poleZmeny[2,i];
+    end;
+  RotateLeft(poleZmeny, velkost_pola, posun_zmeny);
+  Zobraz(poleZmeny, velkost_pola);
 end;
 
-
 procedure TForm1.Zobraz(poleZmeny : array of string; velkost_pola: smallint);
-var i: smallint;
+var i,j: smallint;
 begin
-    for i:=1 to High(poleZmeny) do begin
+  //for j:=1 to 2 do begin
+    for i:=(Low(poleZmeny)) to (High(poleZmeny)) do begin
     if poleZmeny[i]='R' then  begin
-      sgRozvrh.Cells[i,2]:= IntToStr(akt_zmena)+' RB';
-      sgRozvrh.Cells[i,5]:= IntToStr(akt_zmena)+' RP';
-      sgRozvrh.Cells[i,7]:= IntToStr(akt_zmena)+' RR';
+      sgRozvrh.Cells[i+1,2]:= cisloZmeny[1].Blok;
+      sgRozvrh.Cells[i+1,5]:= cisloZmeny[1].PG;
+      sgRozvrh.Cells[i+1,7]:= cisloZmeny[1].RS;
     end
     else if poleZmeny[i]='O' then  begin
-      sgRozvrh.Cells[i,9]:= IntToStr(akt_zmena)+' OB';
-      sgRozvrh.Cells[i,11]:= IntToStr(akt_zmena)+' OP';
-      sgRozvrh.Cells[i,13]:= IntToStr(akt_zmena)+' OR';
+      sgRozvrh.Cells[i+1,9]:= cisloZmeny[1].Blok;
+      sgRozvrh.Cells[i+1,11]:= cisloZmeny[1].PG;
+      sgRozvrh.Cells[i+1,13]:= cisloZmeny[1].RS;
     end
     else if poleZmeny[i]='N' then  begin
-      sgRozvrh.Cells[i,15]:= IntToStr(akt_zmena)+' NB';
-      sgRozvrh.Cells[i,17]:= IntToStr(akt_zmena)+' NP';
-      sgRozvrh.Cells[i,19]:= IntToStr(akt_zmena)+' NR';
+      sgRozvrh.Cells[i+1,15]:= cisloZmeny[1].Blok;
+      sgRozvrh.Cells[i+1,17]:= cisloZmeny[1].PG;
+      sgRozvrh.Cells[i+1,19]:= cisloZmeny[1].RS;
     end
     else if poleZmeny[i]='Z1' then  begin
-      sgRozvrh.Cells[i,21]:= IntToStr(akt_zmena)+' Z1B';
-      sgRozvrh.Cells[i,22]:= IntToStr(akt_zmena)+' Z1P';
-      sgRozvrh.Cells[i,23]:= IntToStr(akt_zmena)+' Z1R';
+      sgRozvrh.Cells[i+1,21]:= cisloZmeny[1].Blok;
+      sgRozvrh.Cells[i+1,22]:= cisloZmeny[1].PG;
+      sgRozvrh.Cells[i+1,23]:= cisloZmeny[1].RS;
     end
     else if poleZmeny[i]='Z2' then  begin
       //sgRozvrh.Cells[i,14]:= IntToStr(akt_zmena)+' Z2B';
@@ -184,11 +192,8 @@ begin
       //sgRozvrh.Cells[i,16]:= IntToStr(akt_zmena)+' Z2R';
     end
     else ;
-  end;
-  {for i:=0 to velkost_pola-1 do
-      begin
-				sgRozvrh.Cells[i+1,2]:=(poleZmeny[i]);
-      end;}
+  	end;
+  //end;
 end;
 
 //--------Drag and Drop + Kopirovanie bunky---------
