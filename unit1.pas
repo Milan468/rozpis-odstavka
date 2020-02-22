@@ -13,7 +13,6 @@ type
     Majster, Blok, PG, RS : string;
     zmena_cislo : smallint;
     odrobit_Z : smallint;
-    posun_zmeny : smallint;
   end;
   { TForm1 }
 
@@ -21,10 +20,10 @@ type
     btVyber: TButton;
     cbZmena: TComboBox;
     DateEdit1: TDateEdit;
-    Edit1: TEdit;
     Label1: TLabel;
     MainMenu1: TMainMenu;
     miKoniec: TMenuItem;
+    miUlozBMP: TMenuItem;
     miNahladMenuItem1: TMenuItem;
     miTlacit: TMenuItem;
     miOtvorit: TMenuItem;
@@ -34,8 +33,9 @@ type
     SaveDialog1: TSaveDialog;
     sgRozvrh: TStringGrid;
     procedure btVyberClick(Sender: TObject);
-    procedure DateEdit1Exit(Sender: TObject);
     procedure FormCreate(Sender: TObject);
+    procedure miOtvoritClick(Sender: TObject);
+    procedure miUlozBMPClick(Sender: TObject);
     procedure miUlozitClick(Sender: TObject);
     procedure sgRozvrhDragDrop(Sender, Source: TObject; X, Y: Integer);
     procedure sgRozvrhDragOver(Sender, Source: TObject; X, Y: Integer;
@@ -56,7 +56,6 @@ var
   Form1: TForm1;
   velkost_pola, posun , akt_zmena, max_zmien, i: smallint;
   SourceCol, SourceRow : integer;
-  //zmena1, zmena2, zmena3, zmena4, zmena5, zmena6 : TStringList
 
   prehodeneZmeny : array[1..6] of smallint=(1,6,2,4,5,3);
 
@@ -85,8 +84,6 @@ implementation
 
 procedure TForm1.FormCreate(Sender: TObject);
 begin
-  //posun_zmeny:= 0; //0,7,14,21,28,35
-
   with cisloZmeny[1] do
     begin
       Majster := 'Marcinek';
@@ -95,17 +92,15 @@ begin
 	    RS := 'Morecz';
       zmena_cislo := 1;
       odrobit_Z := 7;
-      posun_zmeny:= 0;
     end;
   with cisloZmeny[2] do
     begin
       Majster := 'Basa';
-	    Blok := 'Horvath';
+	    Blok := '';         //Horvath
 	    PG := 'Krajci';
 	    RS := 'Svitek';
       zmena_cislo := 2;
       odrobit_Z := 7;
-      posun_zmeny:= 28;
     end;
   with cisloZmeny[3] do
     begin
@@ -115,17 +110,15 @@ begin
 	    RS := 'Chudy';
       zmena_cislo := 3;
       odrobit_Z := 7;
-      posun_zmeny:= 7;
     end;
   with cisloZmeny[4] do
     begin
       Majster := 'Vida';
-	    Blok := 'Racz';
+	    Blok := '';      //Racz
 	    PG := 'Haluz';
 	    RS := 'Porubec';
       zmena_cislo := 4;
       odrobit_Z := 7;
-      posun_zmeny:= 21;
     end;
   with cisloZmeny[5] do
     begin
@@ -135,17 +128,15 @@ begin
 	    RS := 'Bona';
       zmena_cislo := 5;
       odrobit_Z := 7;
-      posun_zmeny:= 14;
     end;
   with cisloZmeny[6] do
     begin
       Majster := 'Hlavacek';
 	    Blok := 'Morvay';
-	    PG := 'Dubravsky';
+	    PG := '';           //Dubravsky
 	    RS := 'Geleneky';
       zmena_cislo := 6;
       odrobit_Z := 7;
-      posun_zmeny:= 35;
     end;
 
 //naplnit fixne
@@ -160,7 +151,25 @@ begin
    sgRozvrh.Cells[0,19]:='N - RS';
    sgRozvrh.Cells[0,21]:='Z1';
    sgRozvrh.Cells[0,25]:='Z2';
+   sgRozvrh.Cells[0,28]:='Ex';
+end;
 
+procedure TForm1.miOtvoritClick(Sender: TObject);
+begin
+  if OpenDialog1.Execute then sgRozvrh.LoadFromFile(OpenDialog1.FileName);
+end;
+
+procedure TForm1.miUlozBMPClick(Sender: TObject);
+var
+  bmp: Graphics.TBitmap;
+begin
+  bmp := Graphics.TBitmap.Create;
+  bmp.SetSize(sgRozvrh.ClientWidth, sgRozvrh.ClientHeight);
+  bmp.Canvas.Brush.Color := clWhite;
+  bmp.Canvas.FillRect(0, 0, bmp.Width, bmp.Height);
+  sgRozvrh.PaintTo(bmp.Canvas, 0, 0);
+  bmp.SaveToFile('test.bmp');
+  FreeAndNil(bmp);
 end;
 
 procedure TForm1.miUlozitClick(Sender: TObject);
@@ -169,7 +178,7 @@ begin
 end;
 
 procedure TForm1.RotateLeft(var poleZmeny : array of string; posun : smallint);
-var  i,j,k : smallint;
+var  i,j : smallint;
   temp : string;
 begin
   for j:=1 to posun do begin
@@ -195,6 +204,7 @@ begin
         5,6,11,12,17,18 : sgRozvrh.Canvas.Brush.Color := clLime;
       	7,8,13,14,19,20	: sgRozvrh.Canvas.Brush.Color := clYellow;
       	21..24					: sgRozvrh.Canvas.Brush.Color := clRed;
+        25..27					: sgRozvrh.Canvas.Brush.Color := clPurple;
      end;
 end;
 
@@ -203,31 +213,36 @@ end;
 procedure TForm1.btVyberClick(Sender: TObject);
 var i: smallint;
 begin
-  for i:=1 to (High(poleZmeny)) do
-    begin
-        sgRozvrh.Cells[i,0]:= DateToStr(DateOf(DateEdit1.Date+(i-1)));
-        sgRozvrh.Cells[i,1]:= DefaultFormatSettings.LongDayNames[DayOfWeek(DateEdit1.Date+(i-1))];
-    end;
+//Skus ci je to iny den ako Pondelok
+   if DayOfWeek(DateEdit1.Date) <> 2 then begin
+   		ShowMessage(' V dátume musíš vybrať Pondelok! ');
+   		DateEdit1.Clear;
+   end
+   else 	//ak je to Pondelok tak pokracuj
+   	begin
+      for i:=1 to (High(poleZmeny)) do
+        begin
+            sgRozvrh.Cells[i,0]:= DateToStr(DateOf(DateEdit1.Date+(i-1)));
+            sgRozvrh.Cells[i,1]:= DefaultFormatSettings.LongDayNames[DayOfWeek(DateEdit1.Date+(i-1))];
+        end;
 
-  case cbZmena.ItemIndex of
-     0 :  posun:= 0;    //zmena1
-     1 :  posun:= 28;
-     2 :  posun:= 7;    //zmena3
-     3 :  posun:= 21;
-     4 :  posun:= 14;    //zmena5
-     5 :  posun:= 35;
-  end;
-  Zobraz(poleZmeny);
+      case cbZmena.ItemIndex of
+         0 :  posun:= 0;    //zmena1
+         1 :  posun:= 28;
+         2 :  posun:= 7;    //zmena3
+         3 :  posun:= 21;
+         4 :  posun:= 14;    //zmena5
+         5 :  posun:= 35;
+      end;
+      Zobraz(poleZmeny);
+    end;
 end;
 
 procedure TForm1.Zobraz(poleZmeny : array of string);
-var i,j, k: smallint;
+var i,j,k : smallint;
 begin
-  //j:= 1;
-  //posun:= 0;
   for j:=Low(prehodeneZmeny) to High(prehodeneZmeny) do begin
     k:=prehodeneZmeny[j];
-    //cisloZmeny[k].Blok;
     RotateLeft(poleZmeny, posun);
 
       for i:=(Low(poleZmeny)) to (High(poleZmeny)) do begin
@@ -242,7 +257,10 @@ begin
           sgRozvrh.Cells[i+1,13]:= cisloZmeny[k].RS;
         end
         else if poleZmeny[i]='N' then  begin
-          sgRozvrh.Cells[i+1,15]:= cisloZmeny[k].Blok;
+          if cisloZmeny[k].Blok = 'Paska' then  begin
+            sgRozvrh.Cells[i+1,24]:= cisloZmeny[k].Blok;
+          end
+          else  sgRozvrh.Cells[i+1,15]:= cisloZmeny[k].Blok;
           sgRozvrh.Cells[i+1,17]:= cisloZmeny[k].PG;
           sgRozvrh.Cells[i+1,19]:= cisloZmeny[k].RS;
         end
@@ -252,20 +270,13 @@ begin
           sgRozvrh.Cells[i+1,23]:= cisloZmeny[k].RS;
         end
         else if poleZmeny[i]='Z2' then  begin
-          //sgRozvrh.Cells[i,14]:= IntToStr(akt_zmena)+' Z2B';
-          //sgRozvrh.Cells[i,15]:= IntToStr(akt_zmena)+' Z2P';
-          //sgRozvrh.Cells[i,16]:= IntToStr(akt_zmena)+' Z2R';
+          sgRozvrh.Cells[i+1,25]:= cisloZmeny[k].Blok;
+          sgRozvrh.Cells[i+1,26]:= cisloZmeny[k].PG;
+          sgRozvrh.Cells[i+1,27]:= cisloZmeny[k].RS;
         end;
   	  end;
     posun:= 7;
   end;
-end;
-
-//---------kontrola pondelka--------------------------
-
-procedure TForm1.DateEdit1Exit(Sender: TObject);
-begin
-  if DayOfWeek(DateEdit1.Date) <> 2 then ShowMessage('Musíš vybrať Pondelok');
 end;
 
 //--------Drag and Drop + Kopirovanie bunky---------
@@ -305,12 +316,12 @@ begin
    	      case QuestionDlg ('Caption','Kopirovat do schranky alebo vlozit zo schranky?',mtCustom,[mrYes,'Kopirovat', mrNo, 'Vlozit', 'IsDefault'],'') of
               mrYes: begin
                    ClipBoard.AsText:= sgRozvrh.Cells[SourceCol, SourceRow];
-                   Edit1.Text:= ClipBoard.AsText;
+                   //Edit1.Text:= ClipBoard.AsText;
                    sgRozvrh.Cells[SourceCol, SourceRow]:= ''; //vyprazdni bunku po skopirovani
          	      end;
               mrNo:  begin
         		      sgRozvrh.Cells[SourceCol, SourceRow]:= Clipboard.AsText;
-        		      Edit1.Text:= ClipBoard.AsText;
+        		      //Edit1.Text:= ClipBoard.AsText;
           	      Clipboard.Clear;
         	      end;
               mrCancel: QuestionDlg ('Caption','You canceled the dialog with ESC or close button.',mtCustom,[mrOK,'Exactly'],'');
