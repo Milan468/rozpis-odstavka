@@ -1,0 +1,5 @@
+case QuestionDlg ('Caption','Message',mtCustom,[mrYes,'Positive', mrNo, 'Negative', 'IsDefault'],'') of
+        mrYes: QuestionDlg ('Caption','So you mean „Yes“',mtCustom,[mrOK,'That is right'],'');
+        mrNo:  QuestionDlg ('Caption','Oh, you mean „No“',mtCustom,[mrOK,'Exactly'],'');
+        mrCancel: QuestionDlg ('Caption','You canceled the dialog with ESC or close button.',mtCustom,[mrOK,'Exactly'],'');
+    end;
